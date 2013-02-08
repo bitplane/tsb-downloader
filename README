@@ -1,0 +1,1 @@
+requires mechanize; sudo apt-get install python-mechanize
