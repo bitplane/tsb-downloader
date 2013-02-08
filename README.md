@@ -1,6 +1,11 @@
 Lloyds TSB Statement Downloader
 ===============================
 
+Status
+------
+
+Not finished yet!
+
 Background
 ----------
 
