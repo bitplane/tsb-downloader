@@ -7,6 +7,7 @@ import argparse
 import datetime
 import getpass
 import mechanize
+import os.path
 
 def prompt(prompt, password=False):
     if password:
@@ -84,7 +85,28 @@ def download(user_id, from_date, to_date):
     setDate('frmTest:dtSearchToDate', to_date)
 
     response = br.submit()
-    print response.read()
+    info = response.info()
+
+    if info.gettype() != 'application/csv':
+        print response
+        raise Exception('Did not get a CSV back (maybe there are more than 150 transactions?)')
+
+    disposition = info.getheader('Content-Disposition')
+    PREFIX='attachment; filename='
+    if disposition.startswith(PREFIX):
+        suggested_prefix, ext = os.path.splitext(disposition[len(PREFIX):])
+        filename = '{0} {1:%Y-%m-%d} {2:%Y-%m-%d}{3}'.format(
+            suggested_prefix, from_date, to_date, ext)
+
+        with open(filename, 'a') as f:
+            for line in response:
+                f.write(line)
+
+        print "Saved transactions to '%s'" % filename
+
+    else:
+        print response
+        raise Exception('Missing "Content-Disposition: attachment" header')
 
 def parse_date(string):
     try:
