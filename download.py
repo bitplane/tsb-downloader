@@ -21,7 +21,7 @@ def extract(data, before, after):
     end   = data.index(after, start)
     return data[start:end]
 
-def download(user_id, from_date, to_date):
+def download(user_id, date_ranges=[]):
     # a new browser and open the login page
     br = mechanize.Browser()
     br.set_handle_robots(False)
@@ -71,42 +71,45 @@ def download(user_id, from_date, to_date):
     export_link = br.find_link(text='Export')
     br.follow_link(export_link)
 
-    print br.title()
-    br.select_form(name='frmTest')
-    # "Date range" as opposed to "Current view of statement"
-    br['frmTest:rdoDateRange'] = ['1']
+    for (from_date, to_date) in date_ranges:
+        print br.title()
+        br.select_form(name='frmTest')
+        # "Date range" as opposed to "Current view of statement"
+        br['frmTest:rdoDateRange'] = ['1']
 
-    def setDate(field_name, date):
-        br[field_name] = [date.strftime('%d')]
-        br[field_name + '.month'] = [date.strftime('%m')]
-        br[field_name + '.year'] = [date.strftime('%Y')]
+        def setDate(field_name, date):
+            br[field_name] = [date.strftime('%d')]
+            br[field_name + '.month'] = [date.strftime('%m')]
+            br[field_name + '.year'] = [date.strftime('%Y')]
 
-    setDate('frmTest:dtSearchFromDate', from_date)
-    setDate('frmTest:dtSearchToDate', to_date)
+        setDate('frmTest:dtSearchFromDate', from_date)
+        setDate('frmTest:dtSearchToDate', to_date)
 
-    response = br.submit()
-    info = response.info()
+        response = br.submit()
+        info = response.info()
 
-    if info.gettype() != 'application/csv':
-        print response
-        raise Exception('Did not get a CSV back (maybe there are more than 150 transactions?)')
+        if info.gettype() != 'application/csv':
+            print response
+            raise Exception('Did not get a CSV back (maybe there are more than 150 transactions?)')
 
-    disposition = info.getheader('Content-Disposition')
-    PREFIX='attachment; filename='
-    if disposition.startswith(PREFIX):
-        suggested_prefix, ext = os.path.splitext(disposition[len(PREFIX):])
-        filename = '{0} {1:%Y-%m-%d} {2:%Y-%m-%d}{3}'.format(
-            suggested_prefix, from_date, to_date, ext)
+        disposition = info.getheader('Content-Disposition')
+        PREFIX='attachment; filename='
+        if disposition.startswith(PREFIX):
+            suggested_prefix, ext = os.path.splitext(disposition[len(PREFIX):])
+            filename = '{0} {1:%Y-%m-%d} {2:%Y-%m-%d}{3}'.format(
+                suggested_prefix, from_date, to_date, ext)
 
-        with open(filename, 'a') as f:
-            for line in response:
-                f.write(line)
+            with open(filename, 'a') as f:
+                for line in response:
+                    f.write(line)
 
-        print "Saved transactions to '%s'" % filename
+            print "Saved transactions to '%s'" % filename
 
-    else:
-        print response
-        raise Exception('Missing "Content-Disposition: attachment" header')
+        else:
+            print response
+            raise Exception('Missing "Content-Disposition: attachment" header')
+
+        br.back()
 
 def parse_date(string):
     try:
@@ -116,11 +119,33 @@ def parse_date(string):
         raise argparse.ArgumentTypeError(
             "'%s' is not a valid date in the form YYYY/MM/DD" % string)
 
+def parse_date_range(string):
+    try:
+        frm, to = string.split('--', 1)
+        from_date = parse_date(frm)
+        to_date = parse_date(to)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "'%s' is not a valid date range (YYYY/MM/DD--YYYY/MM/DD)" % string)
+
+    if from_date > to_date:
+        raise argparse.ArgumentTypeError(
+            "'%s' is after '%s'" % (frm, to))
+
+    return (from_date, to_date)
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', '--user-id', type=int, required=True)
-    parser.add_argument('-f', '--from', type=parse_date, metavar='YYYY/MM/DD', required=True)
-    parser.add_argument('-t', '--to',   type=parse_date, metavar='YYYY/MM/DD', required=True)
-    args = parser.parse_args()
+    parser.add_argument('date_ranges', nargs='+', metavar='YYYY/MM/DD--YYYY/MM/DD',
+                        type=parse_date_range,
+                        help="""One or more date ranges to download statements
+                                for (FROM--TO). Note that Lloyds TSB's web
+                                interface refuses to export a CSV with more
+                                than 150 elements so you might want to make
+                                your ranges smallish.""")
 
-    download(user_id=args.user_id, from_date=getattr(args, 'from'), to_date=args.to)
+    args = parser.parse_args()
+    print args.date_ranges
+
+    download(user_id=args.user_id, date_ranges=args.date_ranges)
