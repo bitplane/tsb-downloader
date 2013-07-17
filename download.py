@@ -72,44 +72,47 @@ def download(user_id, date_ranges=[]):
     br.follow_link(export_link)
 
     for (from_date, to_date) in date_ranges:
-        print br.title()
-        br.select_form(name='frmTest')
-        # "Date range" as opposed to "Current view of statement"
-        br['frmTest:rdoDateRange'] = ['1']
+        download_range(br, from_date, to_date)
 
-        def setDate(field_name, date):
-            br[field_name] = [date.strftime('%d')]
-            br[field_name + '.month'] = [date.strftime('%m')]
-            br[field_name + '.year'] = [date.strftime('%Y')]
+def download_range(br, from_date, to_date):
+    print br.title()
+    br.select_form(name='frmTest')
+    # "Date range" as opposed to "Current view of statement"
+    br['frmTest:rdoDateRange'] = ['1']
 
-        setDate('frmTest:dtSearchFromDate', from_date)
-        setDate('frmTest:dtSearchToDate', to_date)
+    def setDate(field_name, date):
+        br[field_name] = [date.strftime('%d')]
+        br[field_name + '.month'] = [date.strftime('%m')]
+        br[field_name + '.year'] = [date.strftime('%Y')]
 
-        response = br.submit()
-        info = response.info()
+    setDate('frmTest:dtSearchFromDate', from_date)
+    setDate('frmTest:dtSearchToDate', to_date)
 
-        if info.gettype() != 'application/csv':
-            print response
-            raise Exception('Did not get a CSV back (maybe there are more than 150 transactions?)')
+    response = br.submit()
+    info = response.info()
 
-        disposition = info.getheader('Content-Disposition')
-        PREFIX='attachment; filename='
-        if disposition.startswith(PREFIX):
-            suggested_prefix, ext = os.path.splitext(disposition[len(PREFIX):])
-            filename = '{0} {1:%Y-%m-%d} {2:%Y-%m-%d}{3}'.format(
-                suggested_prefix, from_date, to_date, ext)
+    if info.gettype() != 'application/csv':
+        print response
+        raise Exception('Did not get a CSV back (maybe there are more than 150 transactions?)')
 
-            with open(filename, 'a') as f:
-                for line in response:
-                    f.write(line)
+    disposition = info.getheader('Content-Disposition')
+    PREFIX='attachment; filename='
+    if disposition.startswith(PREFIX):
+        suggested_prefix, ext = os.path.splitext(disposition[len(PREFIX):])
+        filename = '{0} {1:%Y-%m-%d} {2:%Y-%m-%d}{3}'.format(
+            suggested_prefix, from_date, to_date, ext)
 
-            print "Saved transactions to '%s'" % filename
+        with open(filename, 'a') as f:
+            for line in response:
+                f.write(line)
 
-        else:
-            print response
-            raise Exception('Missing "Content-Disposition: attachment" header')
+        print "Saved transactions to '%s'" % filename
 
-        br.back()
+    else:
+        print response
+        raise Exception('Missing "Content-Disposition: attachment" header')
+
+    br.back()
 
 def parse_date(string):
     try:
