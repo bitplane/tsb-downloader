@@ -56,12 +56,35 @@ def download():
             links.append(link)
 
     # allow user to choose one
-    print "Please select an account:"
+    print "Accounts:"
     for i in range(len(links)):
         print "{0}:".format(i), links[i].text.split('[')[0]
-    
-    # export this detail
-    
+
+    n = prompt("Please select an account:")
+    link = links[int(n)]
+    response = br.follow_link(link)
+
+    print br.title()
+    export_link = br.find_link(text='Export')
+    br.follow_link(export_link)
+
+    print br.title()
+    br.select_form(name='frmTest')
+    # "Date range" as opposed to "Current view of statement"
+    br['frmTest:rdoDateRange'] = ['1']
+
+    yyyy, mm, dd = prompt("Enter start date (YYYY/MM/DD): ").split('/', 2)
+    br['frmTest:dtSearchFromDate'] = [yyyy]
+    br['frmTest:dtSearchFromDate.month'] = [mm]
+    br['frmTest:dtSearchFromDate.year'] = [dd]
+
+    yyyy, mm, dd = prompt("Enter end date (YYYY/MM/DD): ").split('/', 2)
+    br['frmTest:dtSearchToDate'] = [yyyy]
+    br['frmTest:dtSearchToDate.month'] = [mm]
+    br['frmTest:dtSearchToDate.year'] = [dd]
+
+    response = br.submit()
+    print response.read()
 
 def main():
     download()
