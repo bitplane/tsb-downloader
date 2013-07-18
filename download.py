@@ -72,10 +72,24 @@ def download(user_id, date_ranges=[]):
     br.follow_link(export_link)
 
     for (from_date, to_date) in date_ranges:
-        download_range(br, from_date, to_date)
+        for (f, t) in split_range(from_date, to_date):
+            download_range(br, f, t)
+
+def split_range(from_date, to_date):
+    THREE_MONTHS = datetime.timedelta(days=(28 * 3))
+    ONE_DAY = datetime.timedelta(days=1)
+
+    assert from_date <= to_date
+
+    while to_date - from_date > THREE_MONTHS:
+        yield (from_date, from_date + THREE_MONTHS)
+        from_date += (THREE_MONTHS + ONE_DAY)
+
+    yield (from_date, to_date)
 
 def download_range(br, from_date, to_date):
     print br.title()
+    print "Exporting %s to %s" % (f, t)
     br.select_form(name='frmTest')
     # "Date range" as opposed to "Current view of statement"
     br['frmTest:rdoDateRange'] = ['1']
@@ -92,7 +106,9 @@ def download_range(br, from_date, to_date):
     info = response.info()
 
     if info.gettype() != 'application/csv':
-        print response
+        print info.headers
+        print response.getcode()
+        print response.read()
         raise Exception('Did not get a CSV back (maybe there are more than 150 transactions?)')
 
     disposition = info.getheader('Content-Disposition')
@@ -109,7 +125,6 @@ def download_range(br, from_date, to_date):
         print "Saved transactions to '%s'" % filename
 
     else:
-        print response
         raise Exception('Missing "Content-Disposition: attachment" header')
 
     br.back()
