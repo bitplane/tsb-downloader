@@ -3,8 +3,11 @@
 Outputs a CSV, pipe it somewhere or something.
 """
 
+import argparse
+import datetime
 import getpass
 import mechanize
+import os.path
 
 def prompt(prompt, password=False):
     if password:
@@ -18,7 +21,7 @@ def extract(data, before, after):
     end   = data.index(after, start)
     return data[start:end]
 
-def download():
+def download(user_id, date_ranges=[]):
     # a new browser and open the login page
     br = mechanize.Browser()
     br.set_handle_robots(False)
@@ -28,7 +31,7 @@ def download():
     while 'Enter Memorable Information' not in title:
         print br.title()
         br.select_form(name='frmLogin')
-        br['frmLogin:strCustomerLogin_userID'] = prompt("Enter user ID:")
+        br['frmLogin:strCustomerLogin_userID'] = str(user_id)
         br['frmLogin:strCustomerLogin_pwd']    = prompt("Enter password:", True)
         response = br.submit() # attempt log-in
         title    = br.title()
@@ -56,15 +59,111 @@ def download():
             links.append(link)
 
     # allow user to choose one
-    print "Please select an account:"
+    print "Accounts:"
     for i in range(len(links)):
         print "{0}:".format(i), links[i].text.split('[')[0]
-    
-    # export this detail
-    
 
-def main():
-    download()
+    n = prompt("Please select an account:")
+    link = links[int(n)]
+    response = br.follow_link(link)
+
+    print br.title()
+    export_link = br.find_link(text='Export')
+    br.follow_link(export_link)
+
+    for (from_date, to_date) in date_ranges:
+        for (f, t) in split_range(from_date, to_date):
+            download_range(br, f, t)
+
+def split_range(from_date, to_date):
+    THREE_MONTHS = datetime.timedelta(days=(28 * 3))
+    ONE_DAY = datetime.timedelta(days=1)
+
+    assert from_date <= to_date
+
+    while to_date - from_date > THREE_MONTHS:
+        yield (from_date, from_date + THREE_MONTHS)
+        from_date += (THREE_MONTHS + ONE_DAY)
+
+    yield (from_date, to_date)
+
+def download_range(br, from_date, to_date):
+    print br.title()
+    print "Exporting %s to %s" % (f, t)
+    br.select_form(name='frmTest')
+    # "Date range" as opposed to "Current view of statement"
+    br['frmTest:rdoDateRange'] = ['1']
+
+    def setDate(field_name, date):
+        br[field_name] = [date.strftime('%d')]
+        br[field_name + '.month'] = [date.strftime('%m')]
+        br[field_name + '.year'] = [date.strftime('%Y')]
+
+    setDate('frmTest:dtSearchFromDate', from_date)
+    setDate('frmTest:dtSearchToDate', to_date)
+
+    response = br.submit()
+    info = response.info()
+
+    if info.gettype() != 'application/csv':
+        print info.headers
+        print response.getcode()
+        print response.read()
+        raise Exception('Did not get a CSV back (maybe there are more than 150 transactions?)')
+
+    disposition = info.getheader('Content-Disposition')
+    PREFIX='attachment; filename='
+    if disposition.startswith(PREFIX):
+        suggested_prefix, ext = os.path.splitext(disposition[len(PREFIX):])
+        filename = '{0} {1:%Y-%m-%d} {2:%Y-%m-%d}{3}'.format(
+            suggested_prefix, from_date, to_date, ext)
+
+        with open(filename, 'a') as f:
+            for line in response:
+                f.write(line)
+
+        print "Saved transactions to '%s'" % filename
+
+    else:
+        raise Exception('Missing "Content-Disposition: attachment" header')
+
+    br.back()
+
+def parse_date(string):
+    try:
+        yyyy, mm, dd = string.split('/', 2)
+        return datetime.date(int(yyyy), int(mm), int(dd))
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "'%s' is not a valid date in the form YYYY/MM/DD" % string)
+
+def parse_date_range(string):
+    try:
+        frm, to = string.split('--', 1)
+        from_date = parse_date(frm)
+        to_date = parse_date(to)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "'%s' is not a valid date range (YYYY/MM/DD--YYYY/MM/DD)" % string)
+
+    if from_date > to_date:
+        raise argparse.ArgumentTypeError(
+            "'%s' is after '%s'" % (frm, to))
+
+    return (from_date, to_date)
 
 if __name__=='__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--user-id', type=int, required=True)
+    parser.add_argument('date_ranges', nargs='+', metavar='YYYY/MM/DD--YYYY/MM/DD',
+                        type=parse_date_range,
+                        help="""One or more date ranges to download statements
+                                for (FROM--TO). Note that Lloyds TSB's web
+                                interface refuses to export a CSV with more
+                                than 150 elements so you might want to make
+                                your ranges smallish.""")
+
+    args = parser.parse_args()
+    print args.date_ranges
+
+    download(user_id=args.user_id, date_ranges=args.date_ranges)
