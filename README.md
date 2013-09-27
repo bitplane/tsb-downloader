@@ -4,7 +4,7 @@ Lloyds TSB Statement Downloader
 Status
 ------
 
-Not finished yet!
+Working, with caveats.
 
 Background
 ----------
@@ -32,15 +32,15 @@ You will need:
 
 1. Python 2.7.x or greater
 2. The mechanize module (apt-get install python-mechanize)
-3. A Lloyds TSB account
+3. A Lloyds Bank account
 
 License
 -------
-Copyright (c) 2013 Gaz Davidson <gaz@bitplane.net>
+Copyright (c) 2013 Gaz Davidson <gaz@bitplane.net>,
+                   Will Thompson <will@willthompson.co.uk>
 
 Licensed under the [WTFPL](http://en.wikipedia.org/wiki/WTFPL) with one
 additional clause:
 
    1. Don't blame me.
-
 
