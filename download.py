@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""Download transaction history from Lloyds TSB website
+"""Download transaction history from Lloyds Bank website
 Outputs a CSV, pipe it somewhere or something.
 """
 
@@ -26,7 +26,7 @@ def download(user_id, date_ranges=[]):
     br = mechanize.Browser()
     br.set_handle_robots(False)
 
-    br.open('https://online.lloydstsb.co.uk/personal/logon/login.jsp?WT.ac=hpIBlogon')
+    br.open('https://online.lloydsbank.co.uk/personal/logon/login.jsp?WT.ac=hpIBlogon')
     title = br.title()
     while 'Enter Memorable Information' not in title:
         print br.title()
@@ -158,7 +158,7 @@ if __name__=='__main__':
     parser.add_argument('date_ranges', nargs='+', metavar='YYYY/MM/DD--YYYY/MM/DD',
                         type=parse_date_range,
                         help="""One or more date ranges to download statements
-                                for (FROM--TO). Note that Lloyds TSB's web
+                                for (FROM--TO). Note that Lloyds's web
                                 interface refuses to export a CSV with more
                                 than 150 elements so you might want to make
                                 your ranges smallish.""")
