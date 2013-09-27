@@ -48,7 +48,16 @@ def download(user_id, date_ranges=[]):
         br[field.format(i)] = ['&nbsp;' + prompt(extract(data, before.format(field.format(i)), after))]
     response = br.submit()
 
-    # and hopefully we're now logged in...        
+    # hopefully now we're logged in...        
+    title = br.title()
+
+    # dismiss any nagging messages
+    if 'Mandatory Messages' in title:
+        for link in br.links():
+            if 'lkcont_to_your_acc' in link.url:
+                br.follow_link(link)
+                break
+    
     title = br.title() #'Personal Account Overview' in title
     
     links = []
