@@ -25,8 +25,10 @@ def download(user_id, date_ranges=[]):
     # a new browser and open the login page
     br = mechanize.Browser()
     br.set_handle_robots(False)
+    br.addheaders = [('User-agent', 'LBG Statement Downloader http://github.com/bitplane/tsb-downloader')]
 
     br.open('https://online.lloydsbank.co.uk/personal/logon/login.jsp?WT.ac=hpIBlogon')
+    #br.open('https://www.halifax-online.co.uk/personal/logon/login.jsp?WT.ac=hpIBlogon')
     title = br.title()
     while 'Enter Memorable Information' not in title:
         print br.title()
