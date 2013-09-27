@@ -32,7 +32,7 @@ def download(user_id, date_ranges=[]):
         print br.title()
         br.select_form(name='frmLogin')
         br['frmLogin:strCustomerLogin_userID'] = str(user_id)
-        br['frmLogin:strCustomerLogin_pwd']    = prompt("Enter password:", True)
+        br['frmLogin:strCustomerLogin_pwd']    = prompt('Enter password: ', True)
         response = br.submit() # attempt log-in
         title    = br.title()
 
@@ -68,11 +68,11 @@ def download(user_id, date_ranges=[]):
             links.append(link)
 
     # allow user to choose one
-    print "Accounts:"
+    print 'Accounts:'
     for i in range(len(links)):
-        print "{0}:".format(i), links[i].text.split('[')[0]
+        print '{0}:'.format(i), links[i].text.split('[')[0]
 
-    n = prompt("Please select an account:")
+    n = prompt('Please select an account:')
     link = links[int(n)]
     response = br.follow_link(link)
 
@@ -98,7 +98,7 @@ def split_range(from_date, to_date):
 
 def download_range(br, from_date, to_date):
     print br.title()
-    print "Exporting {0} to {1}".format(from_date, to_date)
+    print 'Exporting {0} to {1}'.format(from_date, to_date)
     br.select_form(name='frmTest')
     # "Date range" as opposed to "Current view of statement"
     br['frmTest:rdoDateRange'] = ['1']
@@ -131,7 +131,7 @@ def download_range(br, from_date, to_date):
             for line in response:
                 f.write(line)
 
-        print "Saved transactions to '{0}'".format(filename)
+        print 'Saved transactions to "{0}"'.format(filename)
 
     else:
         raise Exception('Missing "Content-Disposition: attachment" header')
@@ -144,7 +144,7 @@ def parse_date(string):
         return datetime.date(int(yyyy), int(mm), int(dd))
     except ValueError:
         raise argparse.ArgumentTypeError(
-            "'{0}' is not a valid date in the form YYYY/MM/DD".format(string))
+            '"{0}" is not a valid date in the form YYYY/MM/DD'.format(string))
 
 def parse_date_range(string):
     try:
@@ -153,11 +153,11 @@ def parse_date_range(string):
         to_date = parse_date(to)
     except ValueError:
         raise argparse.ArgumentTypeError(
-            "'{0}' is not a valid date range (YYYY/MM/DD--YYYY/MM/DD)".format(string))
+            '"{0}" is not a valid date range (YYYY/MM/DD--YYYY/MM/DD)'.format(string))
 
     if from_date > to_date:
         raise argparse.ArgumentTypeError(
-            "'{0}' is after '{1}'".format(frm, to))
+            '"{0}" is after "{1}"'.format(frm, to))
 
     return (from_date, to_date)
 
@@ -173,6 +173,5 @@ if __name__=='__main__':
                                 your ranges smallish.""")
 
     args = parser.parse_args()
-    print args.date_ranges
 
     download(user_id=args.user_id, date_ranges=args.date_ranges)
