@@ -1,5 +1,5 @@
-Lloyds TSB Statement Downloader
-===============================
+Lloyds Banking Group Statement Downloader
+=========================================
 
 Status
 ------
