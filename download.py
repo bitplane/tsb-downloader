@@ -98,7 +98,7 @@ def split_range(from_date, to_date):
 
 def download_range(br, from_date, to_date):
     print br.title()
-    print "Exporting %s to %s" % (f, t)
+    print "Exporting {0} to {1}".format(from_date, to_date)
     br.select_form(name='frmTest')
     # "Date range" as opposed to "Current view of statement"
     br['frmTest:rdoDateRange'] = ['1']
@@ -131,7 +131,7 @@ def download_range(br, from_date, to_date):
             for line in response:
                 f.write(line)
 
-        print "Saved transactions to '%s'" % filename
+        print "Saved transactions to '{0}'".format(filename)
 
     else:
         raise Exception('Missing "Content-Disposition: attachment" header')
@@ -144,7 +144,7 @@ def parse_date(string):
         return datetime.date(int(yyyy), int(mm), int(dd))
     except ValueError:
         raise argparse.ArgumentTypeError(
-            "'%s' is not a valid date in the form YYYY/MM/DD" % string)
+            "'{0}' is not a valid date in the form YYYY/MM/DD".format(string))
 
 def parse_date_range(string):
     try:
@@ -153,11 +153,11 @@ def parse_date_range(string):
         to_date = parse_date(to)
     except ValueError:
         raise argparse.ArgumentTypeError(
-            "'%s' is not a valid date range (YYYY/MM/DD--YYYY/MM/DD)" % string)
+            "'{0}' is not a valid date range (YYYY/MM/DD--YYYY/MM/DD)".format(string))
 
     if from_date > to_date:
         raise argparse.ArgumentTypeError(
-            "'%s' is after '%s'" % (frm, to))
+            "'{0}' is after '{1}'".format(frm, to))
 
     return (from_date, to_date)
 
